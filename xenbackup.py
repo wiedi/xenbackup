@@ -239,9 +239,8 @@ def parse_args():
 
 
 	if args.cluster != 'default' and args.cluster not in config:
-		if not args.cluster:
-			log.error("Cluster not defined in configuration File")
-			sys.exit(-1)
+		log.error("Cluster not defined in configuration File")
+		sys.exit(-1)
 
 	defaults = {
 		'url':        'https://localhost',
