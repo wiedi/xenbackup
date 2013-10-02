@@ -50,3 +50,28 @@ Restores a VM from the repository to the cluster
 ### Purge
 
 Purges old backups, keeping a specified number of most recent ones.
+
+## Configuration
+
+Cluster details can be saved in a JSON configuration file in <code>/etc/xenbackup.json</code>
+
+Example:
+
+	{
+	        "dev": {
+	                "url":        "https://xen-01.dev.example.com",
+	                "username":   "root",
+	                "password":   "secret",
+	                "repository": "/tmp/backup-dev/"
+	        },
+	        "prod1": {
+	                "url":      "https://xen-01.prod1.example.com",
+	                "username": "root",
+	                "password": "secret"
+	        },
+	        "prod2": {
+	                "url":      "https://xen-01.prod2.example.com",
+	                "username": "root",
+	                "password": "secret"
+	        }
+	}
