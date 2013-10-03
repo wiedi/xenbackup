@@ -155,11 +155,16 @@ def backup(args):
 
 			if not os.path.exists(path):
 				os.makedirs(path)
-				
+
+			log.debug("Writing metadata for %s", vm)
+			with open(path + '/.metadata', 'w') as f:
+				json.dump(session.xenapi.VM.get_record(ref), f, indent=2, default=unicode)
+
+			log.debug("Starting download for %s", vm)
 			url  = "%s/export?ref=%s&session_id=%s" % (args.url, snapshot, session.handle)
 			download(url, file)
 
-			log.info("Backup for %s finished", vm)			
+			log.info("Backup for %s finished", vm)
 		except Exception, e:
 			log.error("Backup for %s failed: %s", vm, e)
 			# try to clean up a potentially incomplete backup
