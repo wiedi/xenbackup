@@ -14,9 +14,9 @@ Backup script for XenServer
 
 ## Usage
 
-	usage: xenbackup.py [-h] [--cluster CLUSTER] [--url URL] [--username USERNAME]
-	                    [--password PASSWORD] [--repository REPOSITORY]
-	                    {list,backup,restore,purge} ...
+	usage: xenbackup [-h] [--cluster CLUSTER] [--url URL] [--username USERNAME]
+	                 [--password PASSWORD] [--repository REPOSITORY]
+	                 {list,backup,restore,purge} ...
 	
 	positional arguments:
 	  {list,backup,restore,purge}
