@@ -7,6 +7,11 @@ Backup script for XenServer
 - support for multiple clusters
 - stores backups in simple filesystem tree
 
+## Installation
+
+	pip install xenbackup
+
+
 ## Usage
 
 	usage: xenbackup.py [-h] [--cluster CLUSTER] [--url URL] [--username USERNAME]
@@ -75,3 +80,10 @@ Example:
 	                "password": "secret"
 	        }
 	}
+
+
+## How it works
+
+XenBackup uses the XenAPI to communicate with the Xen cluster. Metadata is retrieved over XML-RPC. Backup (GET) and restore (PUT) are standard HTTP verbs. The XenAPI sends a HTTP redirect to the node storing the disk image. This makes transfers very efficient.
+
+Since all communication is HTTP XenBackup can run on any host with python, enough disk space and network connectivity to the cluster.
