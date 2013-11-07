@@ -139,7 +139,9 @@ def backup(args):
 	session = create_session(args.url, args.username, args.password)
 	vms = args.uuid
 	if not args.uuid:
-		vms = [] # todo: get all running vms
+		vms = session.xenapi.VM.get_all_records()
+		inventory = generate_inventory(vms, args.repository)
+		vms = inventory.keys()
 
 	for vm in vms:
 		snapshot = None
