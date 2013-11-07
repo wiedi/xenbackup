@@ -139,7 +139,7 @@ def list(args):
 	setup_logging(args)
 	session = create_session(args.url, args.username, args.password)
 	vms = session.xenapi.VM.get_all_records()
-	log.error('wiedi test')
+
 	inventory = generate_inventory(vms, args.repository)
 
 	if args.uuid:
