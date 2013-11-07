@@ -8,14 +8,30 @@ import time
 import json
 import argparse
 import logging
+import logging.handlers
 import requests
 import XenAPI
 import calendar
 from datetime import datetime
 
-log = logging.getLogger("xenBackup")
-log.addHandler(logging.StreamHandler())
-log.setLevel(logging.DEBUG)
+log = logging.getLogger("XenBackup")
+
+def setup_logging(args):
+	if args.syslog:
+		addr = ('localhost', 514)
+		# syslog unix socket path on linux, mac osx and freebsd
+		for socket_path in ['/dev/log', '/var/run/syslog', '/var/run/log']:
+			if os.path.exists(socket_path):
+				addr = socket_path
+				break
+		facility = logging.handlers.SysLogHandler.LOG_DAEMON
+		handler  = logging.handlers.SysLogHandler(addr, facility)
+		handler.setFormatter(logging.Formatter('XenBackup: %(message)s'))
+		log.addHandler(handler)
+	else:
+		log.addHandler(logging.StreamHandler())
+
+	log.setLevel((3 - min(args.verbose, 2)) * 10)
 
 
 ## backup names
@@ -120,9 +136,10 @@ def print_vm_backups(uuid, vm):
 
 ## commands	
 def list(args):
+	setup_logging(args)
 	session = create_session(args.url, args.username, args.password)
 	vms = session.xenapi.VM.get_all_records()
-	
+	log.error('wiedi test')
 	inventory = generate_inventory(vms, args.repository)
 
 	if args.uuid:
@@ -136,6 +153,7 @@ def list(args):
 			
 
 def backup(args):
+	setup_logging(args)
 	session = create_session(args.url, args.username, args.password)
 	vms = args.uuid
 	if not args.uuid:
@@ -180,6 +198,7 @@ def backup(args):
 
 
 def restore(args):
+	setup_logging(args)
 	session = create_session(args.url, args.username, args.password)
 	vms = session.xenapi.VM.get_all_records()
 	inventory = generate_inventory(vms, args.repository)
@@ -218,6 +237,7 @@ def restore(args):
 
 
 def purge(args):
+	setup_logging(args)
 	session = create_session(args.url, args.username, args.password)
 	vms = session.xenapi.VM.get_all_records()
 	inventory = generate_inventory(vms, args.repository)
@@ -231,8 +251,10 @@ def purge(args):
 def read_config():
 	try:
 		config = json.load(open('/etc/xenbackup.json'))
+	except IOError:
+		config = {}
 	except Exception, e:
-		print e
+		log.error(str(e))
 		config = {}
 	return config
 
@@ -267,6 +289,9 @@ def parse_args():
 	parser.add_argument('--username',   '-l', help='Username')
 	parser.add_argument('--password',   '-p', help='Password')
 	parser.add_argument('--repository', '-r', help='Path where the backups are stored')
+
+	parser.add_argument('--syslog',     '-s', help='Log to syslog instead of stderr', action='store_true')
+	parser.add_argument('--verbose',    '-v', help='be more verbose', action='count', default=0)
 
 	subparsers = parser.add_subparsers(help='commands')
 	
