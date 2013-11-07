@@ -9,7 +9,7 @@ Backup script for XenServer
 
 ## Installation
 
-	pip install xenbackup
+	sudo pip install xenbackup
 
 
 ## Usage
