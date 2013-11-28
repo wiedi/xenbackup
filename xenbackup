@@ -55,12 +55,13 @@ def create_session(url, username, password):
 	except Exception, e:
 		if e.details[0]=='HOST_IS_SLAVE':
 			# Redirect to c luster master
-			session=XenAPI.Session('http://'+e.details[1])
+			url = 'https://'+e.details[1]
+			session=XenAPI.Session(url)
 			session.login_with_password(username, password)
 		else:
 			log.error("XenAPI Login error: %s", e)
 			sys.exit(-1)
-	return session
+	return (session,url)
 
 
 def create_snapshot(session, ref, name):
@@ -131,6 +132,7 @@ def find_backup(uuid_or_file, repository, inventory):
 		
 def print_vm_backups(uuid, vm):
 	print 'VM: ' + uuid
+	print '\tName:' + vm.get('name_label','Unknown')
 	print '\tState: ' + vm.get('power_state', 'Only Backup')
 	print '\tBackups:'
 	if not vm['_backups']:
@@ -142,7 +144,7 @@ def print_vm_backups(uuid, vm):
 ## commands	
 def list(args):
 	setup_logging(args)
-	session = create_session(args.url, args.username, args.password)
+	(session,args.url) = create_session(args.url, args.username, args.password)
 	vms = session.xenapi.VM.get_all_records()
 
 	inventory = generate_inventory(vms, args.repository)
@@ -159,24 +161,36 @@ def list(args):
 
 def backup(args):
 	setup_logging(args)
-	session = create_session(args.url, args.username, args.password)
+	(session,args.url) = create_session(args.url, args.username, args.password)
 	vms = args.uuid
 	if not args.uuid:
 		vms = session.xenapi.VM.get_all_records()
 		inventory = generate_inventory(vms, args.repository)
 		vms = inventory.keys()
 
+	if args.limit:
+		log.info("Backup is limited to vms with XenCenter.CustomFields.backup = 1")
+
 	for vm in vms:
 		snapshot = None
-		log.info("Backup for %s started", vm)
 		try:
 			ref  = session.xenapi.VM.get_by_uuid(vm)
-			name = generate_name(vm)		
+			record = session.xenapi.VM.get_record(ref)
+			if args.limit: 
+				do_backup = 0
+				if 'other_config' in record and 'XenCenter.CustomFields.backup' in record['other_config']:
+					do_backup = record['other_config']['XenCenter.CustomFields.backup']
+				if not do_backup:
+					print "skipping backup of %s" % (record['name_label'])
+					continue
+				
+			log.info("Backup for %s:%s started", record['name_label'], vm)
+			name = generate_name(vm)
 			path = "%s/%s" % (args.repository, vm)
 			file = "%s/%s.xva" % (path, name)
 
 			snapshot = create_snapshot(session, ref, name)
-			log.debug("Snapshot for %s finished, starting download", vm)
+			log.debug("Snapshot for %s:%s finished, starting download",record['name_label'], vm)
 
 			if not os.path.exists(path):
 				os.makedirs(path)
@@ -185,11 +199,11 @@ def backup(args):
 			with open(path + '/.metadata', 'w') as f:
 				json.dump(session.xenapi.VM.get_record(ref), f, indent=2, default=unicode)
 
-			log.debug("Starting download for %s", vm)
+			log.debug("Starting download for %s:%s", record['name_label'], vm)
 			url  = "%s/export?ref=%s&session_id=%s" % (args.url, snapshot, session.handle)
 			download(url, file)
 
-			log.info("Backup for %s finished", vm)
+			log.info("Backup for %s:%s finished", record['name_label'], vm)
 		except Exception, e:
 			log.error("Backup for %s failed: %s", vm, e)
 			# try to clean up a potentially incomplete backup
@@ -204,7 +218,7 @@ def backup(args):
 
 def restore(args):
 	setup_logging(args)
-	session = create_session(args.url, args.username, args.password)
+	(session,args.url) = create_session(args.url, args.username, args.password)
 	vms = session.xenapi.VM.get_all_records()
 	inventory = generate_inventory(vms, args.repository)
 	file = find_backup(args.uuid_or_file, args.repository, inventory)
@@ -243,7 +257,7 @@ def restore(args):
 
 def purge(args):
 	setup_logging(args)
-	session = create_session(args.url, args.username, args.password)
+	(session,args.url) = create_session(args.url, args.username, args.password)
 	vms = session.xenapi.VM.get_all_records()
 	inventory = generate_inventory(vms, args.repository)
 	
@@ -308,6 +322,7 @@ def parse_args():
 	# create backup
 	backup_parser = subparsers.add_parser('backup', help='Create new Backup(s)')
 	backup_parser.add_argument('uuid', help='VM UUID(s)', nargs='*')
+	backup_parser.add_argument('--limit', help='Only backup vms with custom fields backup = 1', action='store_true')
 	backup_parser.set_defaults(func=backup)
 	
 	# restore
