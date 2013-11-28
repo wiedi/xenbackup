@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
 	name             = 'XenBackup',
-	version          = '0.3',
+	version          = '0.4',
 	description      = 'Backup script for XenServer',
 	author           = 'Sebastian Wiedenroth',
 	author_email     = 'sw@core.io',
