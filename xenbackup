@@ -14,9 +14,11 @@ import XenAPI
 import calendar
 from datetime import datetime
 
+logging.basicConfig()
 log = logging.getLogger("XenBackup")
 
 def setup_logging(args):
+	log.parent.handlers = []
 	if args.syslog:
 		addr = ('localhost', 514)
 		# syslog unix socket path on linux, mac osx and freebsd
