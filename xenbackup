@@ -222,6 +222,18 @@ def backup(args):
 				pass
 		finally:
 			if snapshot:
+				#destroy all disks attached to the snapshot
+				snapshot_record = session.xenapi.VM.get_record(snapshot)
+				print snapshot_record
+				for vbdRef in snapshot_record["VBDs"]:
+					if vbdRef != "None":
+						vbdRecord = session.xenapi.VBD.get_record(vbdRef)
+						vdiRef = vbdRecord['VDI']
+						if vdiRef != "None":
+							vdiRecord = session.xenapi.VDI.get_record(vdiRef)
+							if vdiRecord["name_label"] != "xs-tools.iso":
+								session.xenapi.VDI.destroy(vdiRef)
+
 				session.xenapi.VM.destroy(snapshot)
 
 
