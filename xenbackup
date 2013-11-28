@@ -13,10 +13,13 @@ import requests
 import XenAPI
 import calendar
 from datetime import datetime
+from urlparse import urlparse
 
+logging.basicConfig()
 log = logging.getLogger("XenBackup")
 
 def setup_logging(args):
+	log.parent.handlers = []
 	if args.syslog:
 		addr = ('localhost', 514)
 		# syslog unix socket path on linux, mac osx and freebsd
@@ -48,19 +51,25 @@ def parse_name(name):
 
 
 ## xen api functions
+def handle_login_error(message):
+	log.error("XenAPI Login error: %s", message)
+	sys.exit(-1)
+
 def create_session(url, username, password):
 	try:
 		session = XenAPI.Session(url)
 		session.xenapi.login_with_password(username, password)
 	except Exception, e:
-		if e.details[0]=='HOST_IS_SLAVE':
-			# Redirect to c luster master
-			url = 'https://'+e.details[1]
-			session=XenAPI.Session(url)
-			session.login_with_password(username, password)
+		if e.details[0] == 'HOST_IS_SLAVE':
+			# Redirect to cluster master
+			url = urlparse(url).scheme + '://' + e.details[1]
+			try:
+				session = XenAPI.Session(url)
+				session.login_with_password(username, password)
+			except Exception, e:
+				handle_login_error(e)
 		else:
-			log.error("XenAPI Login error: %s", e)
-			sys.exit(-1)
+			handle_login_error(e)
 	return (session,url)
 
 
