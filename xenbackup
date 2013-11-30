@@ -12,6 +12,7 @@ import logging.handlers
 import requests
 import XenAPI
 import calendar
+import gzip
 from datetime import datetime
 from urlparse import urlparse
 
@@ -82,6 +83,7 @@ def create_snapshot(session, ref, name):
 def download(url, file):
 	chunk_size = 1024 * 1024 * 4 # 4 Megs
 	req = requests.get(url, stream = True, verify = False)	
+	#with gzip.open(file, 'wb') as f:
 	with open(file, 'wb') as f:
 		for chunk in req.iter_content(chunk_size = chunk_size):
 			if not chunk: # filter out keep-alive new chunks
@@ -224,7 +226,6 @@ def backup(args):
 			if snapshot:
 				#destroy all disks attached to the snapshot
 				snapshot_record = session.xenapi.VM.get_record(snapshot)
-				print snapshot_record
 				for vbdRef in snapshot_record["VBDs"]:
 					if vbdRef != "None":
 						vbdRecord = session.xenapi.VBD.get_record(vbdRef)
