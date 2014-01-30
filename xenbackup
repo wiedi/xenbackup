@@ -222,7 +222,28 @@ def backup(args):
 				pass
 		finally:
 			if snapshot:
-				session.xenapi.VM.destroy(snapshot)
+				snapshot_details = session.xenapi.VM.get_record(snapshot)
+				vbds = snapshot_details['VBDs']
+
+				# Loop through all the VBDs
+				for vbd_ref in vbds:
+					# Each VDB contains a VDI and also has to be destroyed
+					vbd_records = session.xenapi.VBD.get_record(vbd_ref)
+					vdi_ref = session.xenapi.VBD.get_VDI(vbd_ref)
+					try:
+						session.xenapi.VDI.destroy(vdi_ref)
+					except:
+						pass
+
+					try:
+						session.xenapi.VBD.destroy(vbd_ref)
+					except:
+						pass
+
+				try:   
+					session.xenapi.VM.destroy(snapshot)
+				except:
+					pass
 
 
 def restore(args):
