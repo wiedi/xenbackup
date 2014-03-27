@@ -60,7 +60,7 @@ def create_session(url, username, password):
 		session = XenAPI.Session(url)
 		session.xenapi.login_with_password(username, password)
 	except Exception, e:
-		if e.details[0] == 'HOST_IS_SLAVE':
+		if hasattr(e, 'details') and e.details[0] == 'HOST_IS_SLAVE':
 			# Redirect to cluster master
 			url = urlparse(url).scheme + '://' + e.details[1]
 			try:
