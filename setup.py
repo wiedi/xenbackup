@@ -12,7 +12,7 @@ setup(
 	scripts          = ['xenbackup', ],
 	install_requires = [
 		"XenAPI   == 1.2",
-		"requests == 2.20.0",
+		"requests == 2.31.0",
 		"ago      == 0.0.5",
 	],
 )
